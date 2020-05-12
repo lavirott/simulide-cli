@@ -12,7 +12,8 @@ The simulation logs are automatically saved in a Json file when the program is c
 
 * To replay a previous simulation, based on its logs: 
 
-```./simulide --simu pathToSimu --play pathToLogs```
+```./simulide --simu pathToSimu --play pathToLogs``` you can add the option ```--hexplay pathToPlay``` to specify the path of play.hex.
+By default it looks for play.hex where the program is executed.
 
 
 # SimulIDE 0.3.12-SR8
