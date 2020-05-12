@@ -137,6 +137,10 @@ void init(QJsonArray json_array)
             }
         }
     }
+    while (isActive != false)
+        {
+            QApplication::processEvents();
+        }
     qDebug() << "Simulation terminée !";
 }
 bool inRange(double low, double high, double x)
@@ -173,6 +177,7 @@ int main(int argc, char *argv[])
     string hexPath;
     string logsPath;
     string logsPath2;
+    string hexplay;
     int margin = 0;
     QJsonArray json_array;
     QJsonArray json_array2;
@@ -192,6 +197,10 @@ int main(int argc, char *argv[])
         {
             logsPath = argv[++i];
             open_file(logsPath, json_array);
+        }
+        if (strcmp(argv[i], "--hexplay") == 0)
+        {
+            hexplay = argv[++i];
         }
         if (strcmp(argv[i], "--logs") == 0)
         {
@@ -234,7 +243,6 @@ int main(int argc, char *argv[])
             }
         }
     }
-    //QApplication::setGraphicsSystem( "raster" );//native, raster, opengl
     QApplication app( argc, argv );
 
     QString locale   = QLocale::system().name().split("_").first();
@@ -255,14 +263,13 @@ int main(int argc, char *argv[])
     }
     else if (!simuPath.empty())
     {
-        QString hex = QDir::currentPath() + "/play.hex";
-        window.autoStart(simuPath, hex.toStdString());
+        if (hexplay.empty()){
+            QString hex = QDir::currentPath() + "/play.hex";
+            hexplay = hex.toStdString();
+        }   
+        window.autoStart(simuPath, hexplay);
     }
 
-    /*QRect screenGeometry = QApplication::desktop()->screenGeometry();
-    int x = ( screenGeometry.width()-window.width() ) / 2;
-    int y = ( screenGeometry.height()-window.height() ) / 2;
-    window.move( x, y );*/
     window.scroll( 0, 50 );
 
     window.show();
