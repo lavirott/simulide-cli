@@ -1,0 +1,732 @@
+ README.md                                          |  19 +-
+ demos/blink.hex                                    |  65 +++++++
+ demos/blink.simu                                   |  12 ++
+ demos/blink_logs.json                              |  77 ++++++++
+ demos/play.hex                                     |  29 +++
+ src/gui/circuitwidget/components/mcu/arduino.cpp   |   4 +-
+ src/gui/circuitwidget/components/mcu/arduino.h     |   2 +
+ .../components/mcu/avrcomponentpin.cpp             |  26 ++-
+ .../circuitwidget/components/mcu/avrcomponentpin.h |   4 +
+ src/gui/editorwidget/editorwindow.h                |   3 +-
+ src/main.cpp                                       | 202 +++++++++++++++++++++
+ src/mainwindow.cpp                                 |  12 ++
+ src/mainwindow.h                                   |   5 +-
+ src/simulator/elements/processors/avrprocessor.cpp |   6 +-
+ src/simulator/simulator.cpp                        |   4 +
+ src/simulator/simulator.h                          |   4 +-
+ 16 files changed, 463 insertions(+), 11 deletions(-)
+
+diff --git a/README.md b/README.md
+index 047e19c..d0c39bb 100644
+--- a/README.md
++++ b/README.md
+@@ -1,4 +1,21 @@
+-# SimulIDE 0.3.10
++# simulide-cli
++
++* To start the simulation:
++
++`./simulide --simu pathToSimu --hex pathToHex` with the option `--platform offscreen` to start without display.
++
++The simulation logs are automatically saved in a Json file when the program is closed with `CTRL+C`.
++
++* To compare the logs of two executions:
++
++```./simulide --logs pathToLogs1 pathToLogs2 margin --platform offscreen```
++
++* To replay a previous simulation, based on its logs: 
++
++```./simulide --simu pathToSimu --play pathToLogs```
++
++
++# SimulIDE 0.3.12-SR8
+ 
+ Electronic Circuit Simulator
+ 
+diff --git a/demos/blink.hex b/demos/blink.hex
+new file mode 100644
+index 0000000..6603337
+--- /dev/null
++++ b/demos/blink.hex
+@@ -0,0 +1,65 @@
++:100000000C945C000C946E000C946E000C946E00CA
++:100010000C946E000C946E000C946E000C946E00A8
++:100020000C946E000C946E000C946E000C946E0098
++:100030000C946E000C946E000C946E000C946E0088
++:100040000C9488000C946E000C946E000C946E005E
++:100050000C946E000C946E000C946E000C946E0068
++:100060000C946E000C946E0000000007000201006A
++:100070000003040600000000000000000102040864
++:100080001020408001020408102001020408102002
++:10009000040404040404040402020202020203032E
++:1000A0000303030300000000250028002B000000CC
++:1000B0000000240027002A0011241FBECFEFD8E043
++:1000C000DEBFCDBF21E0A0E0B1E001C01D92A930AC
++:1000D000B207E1F70E94EC010C94F9010C940000C6
++:1000E00061E08DE00E94BD0168EE73E080E090E089
++:1000F0000E94F70060E08DE00E94BD0168EE73E0B1
++:1001000080E090E00C94F70061E08DE00C948101B8
++:100110001F920F920FB60F9211242F933F938F933C
++:100120009F93AF93BF938091010190910201A091A1
++:100130000301B09104013091000123E0230F2D371A
++:1001400020F40196A11DB11D05C026E8230F0296DB
++:10015000A11DB11D20930001809301019093020124
++:10016000A0930301B09304018091050190910601D1
++:10017000A0910701B09108010196A11DB11D8093C6
++:10018000050190930601A0930701B0930801BF9168
++:10019000AF919F918F913F912F910F900FBE0F9034
++:1001A0001F9018953FB7F894809105019091060132
++:1001B000A0910701B091080126B5A89B05C02F3F6B
++:1001C00019F00196A11DB11D3FBFBA2FA92F982F7D
++:1001D0008827820F911DA11DB11DBC01CD0142E0F8
++:1001E000660F771F881F991F4A95D1F70895CF9200
++:1001F000DF92EF92FF92CF93DF936B017C010E941D
++:10020000D200EB01C114D104E104F10479F00E94A1
++:10021000D2006C1B7D0B683E7340A0F381E0C81ACE
++:10022000D108E108F108C851DC4FECCFDF91CF9144
++:10023000FF90EF90DF90CF900895789484B582601E
++:1002400084BD84B5816084BD85B5826085BD85B57A
++:10025000816085BDEEE6F0E0808181608083E1E829
++:10026000F0E0108280818260808380818160808361
++:10027000E0E8F0E0808181608083E1EBF0E0808164
++:1002800084608083E0EBF0E0808181608083EAE736
++:10029000F0E08081846080838081826080838081BF
++:1002A000816080838081806880831092C10008957E
++:1002B000833081F028F4813099F08230A1F00895E4
++:1002C0008630A9F08730B9F08430D1F48091800075
++:1002D0008F7D03C0809180008F7780938000089588
++:1002E00084B58F7702C084B58F7D84BD08958091D9
++:1002F000B0008F7703C08091B0008F7D8093B000F5
++:100300000895CF93DF9390E0FC01E458FF4F2491D0
++:10031000FC01E057FF4F8491882361F190E0880F42
++:10032000991FFC01E255FF4FC591D491FC01EC559A
++:10033000FF4FA591B491611109C09FB7F8948881CE
++:10034000209582238883EC912E230BC0623061F4C8
++:100350009FB7F8948881322F309583238883EC915E
++:100360002E2B2C939FBF06C08FB7F894E8812E2BBD
++:1003700028838FBFDF91CF9108951F93CF93DF9391
++:10038000282F30E0F901E859FF4F8491F901E45832
++:10039000FF4FD491F901E057FF4FC491CC23C1F036
++:1003A000162F81110E945801EC2FF0E0EE0FFF1F75
++:1003B000EC55FF4FA591B4919FB7F894111104C06B
++:1003C0008C91D095D82302C0EC91DE2BDC939FBF9B
++:1003D000DF91CF911F9108950E941D010E9484001A
++:1003E000C0E0D0E00E9470002097E1F30E9400007E
++:0603F000F9CFF894FFCFE5
++:00000001FF
+diff --git a/demos/blink.simu b/demos/blink.simu
+new file mode 100644
+index 0000000..8502c56
+--- /dev/null
++++ b/demos/blink.simu
+@@ -0,0 +1,12 @@
++<circuit type="simulide_0.1" animate="0" speed="1000000" noLinAcc="5" reactStep="50" noLinStep="10">
++ 
++Arduino Uno-3: 
++<item Program="" labelx="0" Ser_Port="false" objectName="Arduino Uno-3" valLabRot="0" Ser_Monitor="false" Mhz="16" labelrot="0" id="Arduino Uno-3" itemtype="Arduino" valLabelx="0" labely="-20" rotation="0" valLabely="0" y="-28" Show_id="true" x="-252" hflip="1" vflip="1"/>
++ 
++PlotterWidget-1: 
++<item updatesEnabled="true" minimized="false" isActiveWindow="true" childrenRegion="" toolTipDuration="-1" focusPolicy="0" fullScreen="false" y="0" accessibleName="" objectName="PlotterWidget-1" minimumHeight="200" toolTip="" windowFilePath="" frameSize="" windowTitle="" maximized="false" autoFillBackground="false" mouseTracking="false" font="Sans Serif,9,-1,5,50,0,0,0,0,0" pos="" maximumSize="" cursor="" MinVolt="-500" layoutDirection="0" frameGeometry="" size="" sizeHint="" windowIconText="" width="200" sizePolicy="" normalGeometry="" whatsThis="" minimumSizeHint="" itemtype="Plotter" maximumHeight="200" locale="" windowOpacity="1" windowModality="0" geometry="" rect="" accessibleDescription="" tabletTracking="false" baseSize="" MaxVolt="500" modal="false" styleSheet="" enabled="true" palette="" sizeIncrement="" minimumWidth="200" childrenRect="" focus="false" minimumSize="" maximumWidth="1000" visible="false" height="200" windowModified="false" acceptDrops="false" inputMethodHints="0" contextMenuPolicy="1" x="0" statusTip="" windowIcon=""/>
++ 
++SerialPortWidget-2: 
++<item updatesEnabled="true" minimized="false" isActiveWindow="true" childrenRegion="" toolTipDuration="-1" focusPolicy="0" fullScreen="false" y="0" accessibleName="" SettingsProp="ttyS0,0,3,0,0,0" objectName="SerialPortWidget-2" minimumHeight="0" toolTip="" windowFilePath="" frameSize="" windowTitle="Settings" maximized="false" autoFillBackground="false" mouseTracking="false" font="Sans Serif,9,-1,5,50,0,0,0,0,0" pos="" maximumSize="" cursor="" layoutDirection="0" frameGeometry="" size="" sizeHint="" windowIconText="" width="313" sizePolicy="" normalGeometry="" whatsThis="" minimumSizeHint="" itemtype="SerialPort" maximumHeight="170" locale="" windowOpacity="1" windowModality="0" geometry="" rect="" accessibleDescription="" tabletTracking="false" baseSize="" modal="false" styleSheet="" enabled="true" palette="" sizeIncrement="" minimumWidth="0" childrenRect="" focus="false" minimumSize="" maximumWidth="450" visible="false" height="141" windowModified="false" acceptDrops="false" inputMethodHints="0" contextMenuPolicy="1" x="0" statusTip="" windowIcon=""/>
++ 
++</circuit>
+diff --git a/demos/blink_logs.json b/demos/blink_logs.json
+new file mode 100644
+index 0000000..a57da39
+--- /dev/null
++++ b/demos/blink_logs.json
+@@ -0,0 +1,77 @@
++[
++    {
++        "port": "PB5",
++        "time": 1461,
++        "value": 1
++    },
++    {
++        "port": "PB5",
++        "time": 2461,
++        "value": 0
++    },
++    {
++        "port": "PB5",
++        "time": 3461,
++        "value": 1
++    },
++    {
++        "port": "PB5",
++        "time": 4461,
++        "value": 0
++    },
++    {
++        "port": "PB5",
++        "time": 5461,
++        "value": 1
++    },
++    {
++        "port": "PB5",
++        "time": 6411,
++        "value": 0
++    },
++    {
++        "port": "PB5",
++        "time": 7361,
++        "value": 1
++    },
++    {
++        "port": "PB5",
++        "time": 8311,
++        "value": 0
++    },
++    {
++        "port": "PB5",
++        "time": 9311,
++        "value": 1
++    },
++    {
++        "port": "PB5",
++        "time": 10311,
++        "value": 0
++    },
++    {
++        "port": "PB5",
++        "time": 11311,
++        "value": 1
++    },
++    {
++        "port": "PB5",
++        "time": 12311,
++        "value": 0
++    },
++    {
++        "port": "PB5",
++        "time": 13311,
++        "value": 1
++    },
++    {
++        "port": "PB5",
++        "time": 14311,
++        "value": 0
++    },
++    {
++        "port": "PB5",
++        "time": 15312,
++        "value": 1
++    }
++]
+diff --git a/demos/play.hex b/demos/play.hex
+new file mode 100644
+index 0000000..91ac713
+--- /dev/null
++++ b/demos/play.hex
+@@ -0,0 +1,29 @@
++:100000000C9434000C9446000C9446000C9446006A
++:100010000C9446000C9446000C9446000C94460048
++:100020000C9446000C9446000C9446000C94460038
++:100030000C9446000C9446000C9446000C94460028
++:100040000C9457000C9446000C9446000C94460007
++:100050000C9446000C9446000C9446000C94460008
++:100060000C9446000C94460011241FBECFEFD8E03C
++:10007000DEBFCDBF21E0A0E0B1E001C01D92A930FC
++:10008000B207E1F70E944A000C94DC000C940000D7
++:10009000089508950E94A1000E944900C0E0D0E0A8
++:1000A0000E9448002097E1F30E940000F9CF1F92C0
++:1000B0000F920FB60F9211242F933F938F939F931C
++:1000C000AF93BF938091010190910201A091030130
++:1000D000B09104013091000123E0230F2D3720F46B
++:1000E0000196A11DB11D05C026E8230F0296A11D92
++:1000F000B11D209300018093010190930201A09310
++:100100000301B09304018091050190910601A09133
++:100110000701B09108010196A11DB11D8093050151
++:1001200090930601A0930701B0930801BF91AF918E
++:100130009F918F913F912F910F900FBE0F901F9025
++:100140001895789484B5826084BD84B5816084BD3F
++:1001500085B5826085BD85B5816085BDEEE6F0E040
++:10016000808181608083E1E8F0E01082808182609C
++:100170008083808181608083E0E8F0E0808181601D
++:100180008083E1EBF0E0808184608083E0EBF0E04D
++:10019000808181608083EAE7F0E0808184608083F1
++:1001A000808182608083808181608083808180689B
++:0C01B00080831092C1000895F894FFCFE6
++:00000001FF
+diff --git a/src/gui/circuitwidget/components/mcu/arduino.cpp b/src/gui/circuitwidget/components/mcu/arduino.cpp
+index 950f32e..939af18 100644
+--- a/src/gui/circuitwidget/components/mcu/arduino.cpp
++++ b/src/gui/circuitwidget/components/mcu/arduino.cpp
+@@ -82,7 +82,7 @@ Arduino::Arduino( QObject* parent, QString type, QString id )
+ Arduino::~Arduino() 
+ {
+ }
+-
++QList<AVRComponentPin*> Arduino::myPinLIst;
+ void Arduino::remove()
+ {
+     m_pb5Pin->setEnode( 0l );
+@@ -225,7 +225,7 @@ void Arduino::addPin( QString id, QString type, QString label, int pos, int xpos
+     //qDebug()<<pos<<id<<label;
+     AVRComponentPin*  newPin = new AVRComponentPin( this, id, type, label, pos, xpos, ypos, angle );
+     m_pinList.append( newPin );
+-    
++    Arduino::myPinLIst.append(newPin);
+     if( type.startsWith("adc") )m_ADCpinList[type.right(1).toInt()] = newPin;
+ }
+ 
+diff --git a/src/gui/circuitwidget/components/mcu/arduino.h b/src/gui/circuitwidget/components/mcu/arduino.h
+index b8b79da..c1342eb 100644
+--- a/src/gui/circuitwidget/components/mcu/arduino.h
++++ b/src/gui/circuitwidget/components/mcu/arduino.h
+@@ -38,6 +38,8 @@ class Arduino : public McuComponent
+         Arduino( QObject* parent, QString type, QString id );
+         ~Arduino();
+ 
++        static QList<AVRComponentPin*> myPinLIst;
++
+  static Component* construct( QObject* parent, QString type, QString id );
+  static LibraryItem * libraryItem();
+  
+diff --git a/src/gui/circuitwidget/components/mcu/avrcomponentpin.cpp b/src/gui/circuitwidget/components/mcu/avrcomponentpin.cpp
+index fdb20cf..cbc0dde 100644
+--- a/src/gui/circuitwidget/components/mcu/avrcomponentpin.cpp
++++ b/src/gui/circuitwidget/components/mcu/avrcomponentpin.cpp
+@@ -29,6 +29,12 @@ AVRComponentPin::AVRComponentPin( McuComponent* mcu, QString id, QString type, Q
+ }
+ AVRComponentPin::~AVRComponentPin(){}
+ 
++QJsonArray AVRComponentPin::tempList;
++
++QString AVRComponentPin::getId( ){
++    return m_id;
++}
++
+ void AVRComponentPin::attach( avr_t*  AvrProcessor )
+ {
+     m_AvrProcessor = AvrProcessor;
+@@ -190,10 +196,25 @@ void AVRComponentPin::setPullup( uint32_t value )
+     }
+ }
+ 
++// QJsonArray AVRComponentPin::getLogs(){
++//     return tempList;
++// }
++
+ void AVRComponentPin::set_pinVoltage( uint32_t value )
+ {
+     if( m_isInput ) return;
+     
++    qDebug() <<  Simulator::self()->getTime() << "Port" << m_port << m_id << "   value : " << value;
++// ==============================================================================================================
++    QJsonObject tempObject
++{
++    {"time", (int) Simulator::self()->getTime() },
++    {"port", m_id},
++    {"value", (int) value}
++}; 
++    AVRComponentPin::tempList.append(tempObject);
++// ==============================================================================================================
++
+     //if( m_isInput ) setPullup( value>0 ); // Activate pullup when port is written while input
+ 
+     if( value > 0 ) m_voltOut = m_voltHigh;
+@@ -214,7 +235,8 @@ void AVRComponentPin::set_pinVoltage( uint32_t value )
+ 
+ void AVRComponentPin::set_pinImpedance( uint32_t value )
+ {
+-    //qDebug() << "Port" << m_port << m_id << "   salida: " << (value > 0 );
++    // qDebug() << "Port" << m_port << m_id << "  is Output: " << (value > 0 );
++    //qDebug() << Simulator::self()->reaClock();
+     
+     if( value > 0 )                         // Pis is Output
+     {
+@@ -230,7 +252,7 @@ void AVRComponentPin::set_pinImpedance( uint32_t value )
+         if( m_ePin[0]->isConnected() && m_attached )
+             m_ePin[0]->getEnode()->addToChangedFast(this);
+     }
+-    //qDebug()<< m_id << "Port" << m_port << m_pinN << "   salida: " << (value and ( 1<<m_pinN ));
++    // qDebug()<< m_id << "Port" << m_port << m_pinN << "   output: " << (value and ( 1<<m_pinN ));
+ }
+ 
+ void AVRComponentPin::adcread()
+diff --git a/src/gui/circuitwidget/components/mcu/avrcomponentpin.h b/src/gui/circuitwidget/components/mcu/avrcomponentpin.h
+index c068e4a..46f260d 100644
+--- a/src/gui/circuitwidget/components/mcu/avrcomponentpin.h
++++ b/src/gui/circuitwidget/components/mcu/avrcomponentpin.h
+@@ -52,6 +52,8 @@ class AVRComponentPin : public McuComponentPin
+         
+         void adcread();
+         
++        QString getId();
++        
+         virtual void resetState();
+ 
+         static void port_hook( struct avr_irq_t* irq, uint32_t value, void* param )
+@@ -81,6 +83,8 @@ class AVRComponentPin : public McuComponentPin
+             ptrAVRComponentPin->set_pinImpedance(value);
+         }
+ 
++        static QJsonArray tempList;
++
+     protected:
+         void setPullup( uint32_t value );
+ 
+diff --git a/src/gui/editorwidget/editorwindow.h b/src/gui/editorwidget/editorwindow.h
+index c5bc206..71ff873 100644
+--- a/src/gui/editorwidget/editorwindow.h
++++ b/src/gui/editorwidget/editorwindow.h
+@@ -45,6 +45,8 @@ class EditorWindow : public QWidget
+         void stop();
+         void run();
+         bool save();
++        void upload();
++
+         
+     private slots:
+         void newFile();
+@@ -67,7 +69,6 @@ class EditorWindow : public QWidget
+         void stepOver();
+         void reset();
+         void compile();
+-        void upload();
+         void findReplaceDialog();
+ 
+     private:
+diff --git a/src/main.cpp b/src/main.cpp
+index 99e5eec..b10062f 100644
+--- a/src/main.cpp
++++ b/src/main.cpp
+@@ -19,12 +19,136 @@
+ 
+ #include <QApplication>
+ #include <QTranslator>
++#include <string>
++#include <iostream>
++#include "avrcomponentpin.h"
++#include "arduino.h"
++
++#include <signal.h>
++#include <stdlib.h>
++#include <stdio.h>
++#include <unistd.h>
++
++#include <chrono>
++#include <thread>
+ 
+ #include "mainwindow.h"
+ 
++using namespace std;
++
++void open_file(string logsPath, QJsonArray &json_array)
++{
++    QFile file_obj(QString::fromStdString(logsPath));
++
++    if (!file_obj.open(QIODevice::ReadOnly))
++    {
++        qDebug() << "Failed to open " << QString::fromStdString(logsPath);
++        exit(1);
++    }
++    QTextStream file_text(&file_obj);
++    QString json_string;
++    json_string = file_text.readAll();
++    file_obj.close();
++    QByteArray json_bytes = json_string.toLocal8Bit();
++    auto json_doc = QJsonDocument::fromJson(json_bytes);
++
++    if (json_doc.isNull())
++    {
++        qDebug() << "Failed to create JSON doc.";
++        exit(2);
++    }
++    if (!json_doc.isArray())
++    {
++        qDebug() << "JSON doc is not an array.";
++        exit(1);
++    }
++
++    json_array = json_doc.array();
++
++    if (json_array.isEmpty())
++    {
++        qDebug() << "The array is empty";
++        exit(1);
++    }
++}
++
++void save_logs(int s)
++{
++    extern QJsonArray tempList;
++
++    QFile save_file("out.json");
++    if (!save_file.open(QIODevice::WriteOnly))
++    {
++        qDebug() << "failed to open save file";
++        exit(1);
++    }
++    QJsonDocument json_doc(AVRComponentPin::tempList);
++    QString json_string = json_doc.toJson();
++    save_file.write(json_string.toLocal8Bit());
++    save_file.close();
++    printf("Logs saved !\n");
++    exit(1);
++}
++
++void init(QJsonArray json_array)
++{
++    QList<AVRComponentPin *> pinList = Arduino::myPinLIst;
++    bool isActive = false;
++    for (int p = 0; p < json_array.count(); ++p)
++    {
++        for (int q = 0; q < pinList.size(); ++q)
++        {
++            AVRComponentPin *avrpin1 = pinList[q];
++            QString port = json_array.at(p).toObject().value(QString::fromStdString("port")).toString();
++
++            if (avrpin1->getId().compare(port) == 0)
++            {
++                avrpin1->set_pinImpedance(1);
++            }
++        }
++    }
++    for (int i = 0; i < json_array.count()-1; ++i)
++    {
++        QTimer *timer = new QTimer();
++        int time;
++        while (isActive != false)
++        {
++            QApplication::processEvents();
++        }
++        QString port = json_array.at(i).toObject().value(QString::fromStdString("port")).toString();
++        int value = json_array.at(i).toObject().value(QString::fromStdString("value")).toInt();
++        if (i != 0)
++        {
++            time = json_array.at(i).toObject().value(QString::fromStdString("time")).toInt() - json_array.at(i - 1).toObject().value(QString::fromStdString("time")).toInt();
++        }
++        else
++        {
++            time = json_array.at(i).toObject().value(QString::fromStdString("time")).toInt();
++        }
++        for (int k = 0; k < pinList.size(); ++k)
++        {
++            AVRComponentPin *avrpin = pinList[k];
++            if (avrpin->getId().compare(port) == 0)
++            {
++                timer->setSingleShot(true);
++                isActive = true;
++                QObject::connect(timer, &QTimer::timeout, [avrpin, value, &isActive]() { avrpin->set_pinVoltage(value); isActive = false; });
++                timer->start((long)time);
++            }
++        }
++    }
++    qDebug() << "Simulation terminée !";
++}
++bool inRange(double low, double high, double x)
++{
++    return (low <= x && x <= high);
++}
++
+ int main(int argc, char *argv[])
+ {
+ 
++    signal(SIGINT, save_logs);
++
+ #ifdef _WIN32
+     QStringList paths = QCoreApplication::libraryPaths();
+     paths.append("plugins");
+@@ -45,6 +169,71 @@ int main(int argc, char *argv[])
+     }
+ #endif
+ 
++    string simuPath;
++    string hexPath;
++    string logsPath;
++    string logsPath2;
++    int margin = 0;
++    QJsonArray json_array;
++    QJsonArray json_array2;
++
++    for (int i = 0; i < argc - 1; ++i)
++    {
++
++        if (strcmp(argv[i], "--simu") == 0)
++        {
++            simuPath = argv[++i];
++        }
++        if (strcmp(argv[i], "--hex") == 0)
++        {
++            hexPath = argv[++i];
++        }
++        if (strcmp(argv[i], "--play") == 0)
++        {
++            logsPath = argv[++i];
++            open_file(logsPath, json_array);
++        }
++        if (strcmp(argv[i], "--logs") == 0)
++        {
++            logsPath = argv[++i];
++            logsPath2 = argv[++i];
++            if (argc >= i + 1)
++            {
++                margin = atoi(argv[++i]);
++            }
++
++            open_file(logsPath, json_array);
++            open_file(logsPath2, json_array2);
++
++            int count = 0;
++            if (json_array.count() < json_array2.count())
++            {
++                count = json_array.count();
++            }
++            else
++            {
++                count = json_array2.count();
++            }
++            for (int i = 0; i < count; ++i)
++            {
++
++                double time1 = json_array.at(i).toObject().value(QString::fromStdString("time")).toDouble();
++                double time2 = json_array2.at(i).toObject().value(QString::fromStdString("time")).toDouble();
++                QString port1 = json_array.at(i).toObject().value(QString::fromStdString("port")).toString();
++                QString port2 = json_array2.at(i).toObject().value(QString::fromStdString("port")).toString();
++                int value1 = json_array.at(i).toObject().value(QString::fromStdString("value")).toInt();
++                int value2 = json_array2.at(i).toObject().value(QString::fromStdString("value")).toInt();
++
++                bool time = inRange(time1 - margin, time1 + margin, time2);
++                bool port = port2.compare(port1);
++                bool value = value2 == value1;
++
++                qDebug() << "Same Time :" << time;
++                qDebug() << "Same port :" << !port;
++                qDebug() << "Same value :" << value;
++            }
++        }
++    }
+     //QApplication::setGraphicsSystem( "raster" );//native, raster, opengl
+     QApplication app( argc, argv );
+ 
+@@ -60,6 +249,16 @@ int main(int argc, char *argv[])
+ 
+     MainWindow window;
+     
++    if (!simuPath.empty() && !hexPath.empty())
++    {
++        window.autoStart(simuPath, hexPath);
++    }
++    else if (!simuPath.empty())
++    {
++        QString hex = QDir::currentPath() + "/play.hex";
++        window.autoStart(simuPath, hex.toStdString());
++    }
++
+     /*QRect screenGeometry = QApplication::desktop()->screenGeometry();
+     int x = ( screenGeometry.width()-window.width() ) / 2;
+     int y = ( screenGeometry.height()-window.height() ) / 2;
+@@ -68,6 +267,9 @@ int main(int argc, char *argv[])
+ 
+     window.show();
+     app.setApplicationVersion( APP_VERSION );
++    QTimer::singleShot(5000, [&json_array] {
++        init(json_array);
++    });
+     return app.exec();
+ }
+ 
+diff --git a/src/mainwindow.cpp b/src/mainwindow.cpp
+index 8ed8461..91b0908 100644
+--- a/src/mainwindow.cpp
++++ b/src/mainwindow.cpp
+@@ -28,6 +28,9 @@
+ #include "utils.h"
+ #include "simuapi_apppath.h"
+ 
++#include <string>
++#include <iostream>
++using namespace std;
+ 
+ MainWindow* MainWindow::m_pSelf = 0l;
+ 
+@@ -76,6 +79,15 @@ MainWindow::MainWindow()
+ }
+ MainWindow::~MainWindow(){ }
+ 
++void MainWindow::autoStart(string simu, string hex){
++    QString simuqstr = QString::fromStdString(simu);
++    QString hexqstr = QString::fromStdString(hex);
++    m_circuit->loadCirc(simuqstr);
++    m_editor->loadFile(hexqstr);
++    m_circuit->powerCircOn();
++    m_editor->upload();
++}
++
+ void MainWindow::closeEvent( QCloseEvent *event )
+ {
+     if( !m_editor->close() )      { event->ignore(); return; }
+diff --git a/src/mainwindow.h b/src/mainwindow.h
+index 0cb2690..6ab5035 100644
+--- a/src/mainwindow.h
++++ b/src/mainwindow.h
+@@ -21,6 +21,9 @@
+ #define MAINWINDOW_H
+ 
+ #include <QtWidgets>
++#include <string>
++#include <iostream>
++using namespace std;
+ 
+ class PropertiesWidget;
+ class ComponentSelector;
+@@ -39,7 +42,7 @@ class MAINMODULE_EXPORT MainWindow : public QMainWindow
+  static MainWindow* self() { return m_pSelf; }
+ 
+         QSettings* settings();
+-
++        void autoStart(string simu, string hex);
+         void loadPlugins();
+         void unLoadPugin( QString pluginName );
+         
+diff --git a/src/simulator/elements/processors/avrprocessor.cpp b/src/simulator/elements/processors/avrprocessor.cpp
+index 12409e1..e9a364b 100644
+--- a/src/simulator/elements/processors/avrprocessor.cpp
++++ b/src/simulator/elements/processors/avrprocessor.cpp
+@@ -179,9 +179,9 @@ bool AvrProcessor::loadFirmware( QString fileN )
+     /// Done: Modified simavr to not call abort(), instead it returns error code.
+     if( avr_load_firmware( m_avrProcessor, &f ) != 0 )
+     {
+-        QMessageBox::warning(0,tr("Error:"),
+-                               tr("Wrong firmware!!").arg(f.mmcu) );
+-        return false;
++        // QMessageBox::warning(0,tr("Error:"),
++        //                        tr("Wrong firmware!!").arg(f.mmcu) );
++        // return false;
+     }
+     if( f.flashbase ) m_avrProcessor->pc = f.flashbase;
+ 
+diff --git a/src/simulator/simulator.cpp b/src/simulator/simulator.cpp
+index 43bef9d..60c1f9c 100644
+--- a/src/simulator/simulator.cpp
++++ b/src/simulator/simulator.cpp
+@@ -215,6 +215,10 @@ void Simulator::runContinuous()
+     m_timerId = this->startTimer( m_timerTick );
+ }
+ 
++int Simulator::getTime(){
++    return m_RefTimer.elapsed();
++}
++
+ void Simulator::debug()
+ {
+     startSim();
+diff --git a/src/simulator/simulator.h b/src/simulator/simulator.h
+index 96d9246..8d7b961 100644
+--- a/src/simulator/simulator.h
++++ b/src/simulator/simulator.h
+@@ -50,7 +50,9 @@ class MAINMODULE_EXPORT Simulator : public QObject
+         void runCircuitStep();
+         void runGraphicStep();
+         void runExtraStep();
+-        
++
++        int getTime();
++
+         int circuitRate() { return m_circuitRate; }
+         int simuRate() { return m_simuRate; }
+         int simuRateChanged( int rate );

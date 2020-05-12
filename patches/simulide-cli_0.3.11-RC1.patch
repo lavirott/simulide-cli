@@ -1,0 +1,490 @@
+ src/gui/circuitwidget/components/mcu/arduino.cpp   |   4 +-
+ src/gui/circuitwidget/components/mcu/arduino.h     |   2 +
+ .../components/mcu/avrcomponentpin.cpp             |  27 ++-
+ .../circuitwidget/components/mcu/avrcomponentpin.h |   4 +
+ src/gui/editorwidget/editorwindow.h                |   3 +-
+ src/main.cpp                                       | 202 +++++++++++++++++++++
+ src/mainwindow.cpp                                 |  12 ++
+ src/mainwindow.h                                   |   5 +-
+ src/simulator/elements/processors/avrprocessor.cpp |   6 +-
+ src/simulator/simulator.cpp                        |   4 +
+ src/simulator/simulator.h                          |   1 +
+ 11 files changed, 260 insertions(+), 10 deletions(-)
+
+diff --git a/src/gui/circuitwidget/components/mcu/arduino.cpp b/src/gui/circuitwidget/components/mcu/arduino.cpp
+index bfb2ea2..10b8a2f 100644
+--- a/src/gui/circuitwidget/components/mcu/arduino.cpp
++++ b/src/gui/circuitwidget/components/mcu/arduino.cpp
+@@ -82,7 +82,7 @@ Arduino::Arduino( QObject* parent, QString type, QString id )
+ Arduino::~Arduino() 
+ {
+ }
+-
++QList<AVRComponentPin*> Arduino::myPinLIst;
+ void Arduino::remove()
+ {
+     m_pb5Pin->setEnode( 0l );
+@@ -222,7 +222,7 @@ void Arduino::addPin( QString id, QString type, QString label, int pos, int xpos
+     //qDebug()<<pos<<id<<label;
+     AVRComponentPin*  newPin = new AVRComponentPin( this, id, type, label, pos, xpos, ypos, angle );
+     m_pinList.append( newPin );
+-    
++    Arduino::myPinLIst.append(newPin);
+     if( type.startsWith("adc") )m_ADCpinList[type.right(1).toInt()] = newPin;
+ }
+ 
+diff --git a/src/gui/circuitwidget/components/mcu/arduino.h b/src/gui/circuitwidget/components/mcu/arduino.h
+index b8b79da..c1342eb 100644
+--- a/src/gui/circuitwidget/components/mcu/arduino.h
++++ b/src/gui/circuitwidget/components/mcu/arduino.h
+@@ -38,6 +38,8 @@ class Arduino : public McuComponent
+         Arduino( QObject* parent, QString type, QString id );
+         ~Arduino();
+ 
++        static QList<AVRComponentPin*> myPinLIst;
++
+  static Component* construct( QObject* parent, QString type, QString id );
+  static LibraryItem * libraryItem();
+  
+diff --git a/src/gui/circuitwidget/components/mcu/avrcomponentpin.cpp b/src/gui/circuitwidget/components/mcu/avrcomponentpin.cpp
+index a5eac42..a6bba65 100644
+--- a/src/gui/circuitwidget/components/mcu/avrcomponentpin.cpp
++++ b/src/gui/circuitwidget/components/mcu/avrcomponentpin.cpp
+@@ -29,6 +29,12 @@ AVRComponentPin::AVRComponentPin( McuComponent* mcu, QString id, QString type, Q
+ }
+ AVRComponentPin::~AVRComponentPin(){}
+ 
++QJsonArray AVRComponentPin::tempList;
++
++QString AVRComponentPin::getId( ){
++    return m_id;
++}
++
+ void AVRComponentPin::attach( avr_t*  AvrProcessor )
+ {
+     m_AvrProcessor = AvrProcessor;
+@@ -188,10 +194,24 @@ void AVRComponentPin::setPullup( uint32_t value )
+     }
+ }
+ 
++// QJsonArray AVRComponentPin::getLogs(){
++//     return tempList;
++// }
++
++
+ void AVRComponentPin::set_pinVoltage( uint32_t value )
+ {
+     if( m_isInput ) return;
+-    //qDebug() << "Port" << m_port << m_id << "   estado: " << value;
++    qDebug() <<  Simulator::self()->getTime() << "Port" << m_port << m_id << "   value : " << value;
++// ==============================================================================================================
++    QJsonObject tempObject
++{
++    {"time", (int) Simulator::self()->getTime() },
++    {"port", m_id},
++    {"value", (int) value}
++}; 
++    AVRComponentPin::tempList.append(tempObject);
++// ==============================================================================================================
+ 
+     //if( m_isInput ) setPullup( value>0 ); // Activate pullup when port is written while input
+ 
+@@ -211,7 +231,8 @@ void AVRComponentPin::set_pinVoltage( uint32_t value )
+ 
+ void AVRComponentPin::set_pinImpedance( uint32_t value )
+ {
+-    //qDebug() << "Port" << m_port << m_id << "   salida: " << (value > 0 );
++    // qDebug() << "Port" << m_port << m_id << "  is Output: " << (value > 0 );
++    //qDebug() << Simulator::self()->reaClock();
+     
+     if( value > 0 )                         // Pis is Output
+     {
+@@ -227,7 +248,7 @@ void AVRComponentPin::set_pinImpedance( uint32_t value )
+         if( m_ePin[0]->isConnected() && m_attached )
+             m_ePin[0]->getEnode()->addToChangedFast(this);
+     }
+-    //qDebug()<< m_id << "Port" << m_port << m_pinN << "   salida: " << (value and ( 1<<m_pinN ));
++    // qDebug()<< m_id << "Port" << m_port << m_pinN << "   output: " << (value and ( 1<<m_pinN ));
+ }
+ 
+ void AVRComponentPin::adcread()
+diff --git a/src/gui/circuitwidget/components/mcu/avrcomponentpin.h b/src/gui/circuitwidget/components/mcu/avrcomponentpin.h
+index 09cd1a0..f7272d3 100644
+--- a/src/gui/circuitwidget/components/mcu/avrcomponentpin.h
++++ b/src/gui/circuitwidget/components/mcu/avrcomponentpin.h
+@@ -53,6 +53,8 @@ class AVRComponentPin : public McuComponentPin
+         void setVChanged();
+         
+         void adcread();
++        
++        QString getId();
+ 
+         static void port_hook( struct avr_irq_t* irq, uint32_t value, void* param )
+         {
+@@ -81,6 +83,8 @@ class AVRComponentPin : public McuComponentPin
+             ptrAVRComponentPin->set_pinImpedance(value);
+         }
+ 
++        static QJsonArray tempList;
++
+     protected:
+         void setPullup( uint32_t value );
+ 
+diff --git a/src/gui/editorwidget/editorwindow.h b/src/gui/editorwidget/editorwindow.h
+index 6437b32..1fff15b 100644
+--- a/src/gui/editorwidget/editorwindow.h
++++ b/src/gui/editorwidget/editorwindow.h
+@@ -42,6 +42,8 @@ class EditorWindow : public QWidget
+         void pause();
+         void stop();
+         bool save();
++        void upload();
++
+         
+     private slots:
+         void newFile();
+@@ -64,7 +66,6 @@ class EditorWindow : public QWidget
+         void stepOver();
+         void reset();
+         void compile();
+-        void upload();
+         void findReplaceDialog();
+ 
+     private:
+diff --git a/src/main.cpp b/src/main.cpp
+index bc1eae4..5809c70 100644
+--- a/src/main.cpp
++++ b/src/main.cpp
+@@ -19,12 +19,136 @@
+ 
+ #include <QApplication>
+ #include <QTranslator>
++#include <string>
++#include <iostream>
++#include "avrcomponentpin.h"
++#include "arduino.h"
++
++#include <signal.h>
++#include <stdlib.h>
++#include <stdio.h>
++#include <unistd.h>
++
++#include <chrono>
++#include <thread>
+ 
+ #include "mainwindow.h"
+ 
++using namespace std;
++
++void open_file(string logsPath, QJsonArray &json_array)
++{
++    QFile file_obj(QString::fromStdString(logsPath));
++
++    if (!file_obj.open(QIODevice::ReadOnly))
++    {
++        qDebug() << "Failed to open " << QString::fromStdString(logsPath);
++        exit(1);
++    }
++    QTextStream file_text(&file_obj);
++    QString json_string;
++    json_string = file_text.readAll();
++    file_obj.close();
++    QByteArray json_bytes = json_string.toLocal8Bit();
++    auto json_doc = QJsonDocument::fromJson(json_bytes);
++
++    if (json_doc.isNull())
++    {
++        qDebug() << "Failed to create JSON doc.";
++        exit(2);
++    }
++    if (!json_doc.isArray())
++    {
++        qDebug() << "JSON doc is not an array.";
++        exit(1);
++    }
++
++    json_array = json_doc.array();
++
++    if (json_array.isEmpty())
++    {
++        qDebug() << "The array is empty";
++        exit(1);
++    }
++}
++
++void save_logs(int s)
++{
++    extern QJsonArray tempList;
++
++    QFile save_file("out.json");
++    if (!save_file.open(QIODevice::WriteOnly))
++    {
++        qDebug() << "failed to open save file";
++        exit(1);
++    }
++    QJsonDocument json_doc(AVRComponentPin::tempList);
++    QString json_string = json_doc.toJson();
++    save_file.write(json_string.toLocal8Bit());
++    save_file.close();
++    printf("Logs saved !\n");
++    exit(1);
++}
++
++void init(QJsonArray json_array)
++{
++    QList<AVRComponentPin *> pinList = Arduino::myPinLIst;
++    bool isActive = false;
++    for (int p = 0; p < json_array.count(); ++p)
++    {
++        for (int q = 0; q < pinList.size(); ++q)
++        {
++            AVRComponentPin *avrpin1 = pinList[q];
++            QString port = json_array.at(p).toObject().value(QString::fromStdString("port")).toString();
++
++            if (avrpin1->getId().compare(port) == 0)
++            {
++                avrpin1->set_pinImpedance(1);
++            }
++        }
++    }
++    for (int i = 0; i < json_array.count()-1; ++i)
++    {
++        QTimer *timer = new QTimer();
++        int time;
++        while (isActive != false)
++        {
++            QApplication::processEvents();
++        }
++        QString port = json_array.at(i).toObject().value(QString::fromStdString("port")).toString();
++        int value = json_array.at(i).toObject().value(QString::fromStdString("value")).toInt();
++        if (i != 0)
++        {
++            time = json_array.at(i).toObject().value(QString::fromStdString("time")).toInt() - json_array.at(i - 1).toObject().value(QString::fromStdString("time")).toInt();
++        }
++        else
++        {
++            time = json_array.at(i).toObject().value(QString::fromStdString("time")).toInt();
++        }
++        for (int k = 0; k < pinList.size(); ++k)
++        {
++            AVRComponentPin *avrpin = pinList[k];
++            if (avrpin->getId().compare(port) == 0)
++            {
++                timer->setSingleShot(true);
++                isActive = true;
++                QObject::connect(timer, &QTimer::timeout, [avrpin, value, &isActive]() { avrpin->set_pinVoltage(value); isActive = false; });
++                timer->start((long)time);
++            }
++        }
++    }
++    qDebug() << "Simulation terminée !";
++}
++bool inRange(double low, double high, double x)
++{
++    return (low <= x && x <= high);
++}
++
+ int main(int argc, char *argv[])
+ {
+ 
++    signal(SIGINT, save_logs);
++
+ #ifdef _WIN32
+     QStringList paths = QCoreApplication::libraryPaths();
+     paths.append("plugins");
+@@ -39,6 +163,71 @@ int main(int argc, char *argv[])
+     QCoreApplication::setLibraryPaths(paths);
+ #endif
+ 
++    string simuPath;
++    string hexPath;
++    string logsPath;
++    string logsPath2;
++    int margin = 0;
++    QJsonArray json_array;
++    QJsonArray json_array2;
++
++    for (int i = 0; i < argc - 1; ++i)
++    {
++
++        if (strcmp(argv[i], "--simu") == 0)
++        {
++            simuPath = argv[++i];
++        }
++        if (strcmp(argv[i], "--hex") == 0)
++        {
++            hexPath = argv[++i];
++        }
++        if (strcmp(argv[i], "--play") == 0)
++        {
++            logsPath = argv[++i];
++            open_file(logsPath, json_array);
++        }
++        if (strcmp(argv[i], "--logs") == 0)
++        {
++            logsPath = argv[++i];
++            logsPath2 = argv[++i];
++            if (argc >= i + 1)
++            {
++                margin = atoi(argv[++i]);
++            }
++
++            open_file(logsPath, json_array);
++            open_file(logsPath2, json_array2);
++
++            int count = 0;
++            if (json_array.count() < json_array2.count())
++            {
++                count = json_array.count();
++            }
++            else
++            {
++                count = json_array2.count();
++            }
++            for (int i = 0; i < count; ++i)
++            {
++
++                double time1 = json_array.at(i).toObject().value(QString::fromStdString("time")).toDouble();
++                double time2 = json_array2.at(i).toObject().value(QString::fromStdString("time")).toDouble();
++                QString port1 = json_array.at(i).toObject().value(QString::fromStdString("port")).toString();
++                QString port2 = json_array2.at(i).toObject().value(QString::fromStdString("port")).toString();
++                int value1 = json_array.at(i).toObject().value(QString::fromStdString("value")).toInt();
++                int value2 = json_array2.at(i).toObject().value(QString::fromStdString("value")).toInt();
++
++                bool time = inRange(time1 - margin, time1 + margin, time2);
++                bool port = port2.compare(port1);
++                bool value = value2 == value1;
++
++                qDebug() << "Same Time :" << time;
++                qDebug() << "Same port :" << !port;
++                qDebug() << "Same value :" << value;
++            }
++        }
++    }
+     //QApplication::setGraphicsSystem( "raster" );//native, raster, opengl
+     QApplication app( argc, argv );
+ 
+@@ -54,6 +243,16 @@ int main(int argc, char *argv[])
+ 
+     MainWindow window;
+     
++    if (!simuPath.empty() && !hexPath.empty())
++    {
++        window.autoStart(simuPath, hexPath);
++    }
++    else if (!simuPath.empty())
++    {
++        QString hex = QDir::currentPath() + "/play.hex";
++        window.autoStart(simuPath, hex.toStdString());
++    }
++
+     QRect screenGeometry = QApplication::desktop()->screenGeometry();
+     int x = ( screenGeometry.width()-window.width() ) / 2;
+     int y = ( screenGeometry.height()-window.height() ) / 2;
+@@ -61,6 +260,9 @@ int main(int argc, char *argv[])
+ 
+     window.show();
+     app.setApplicationVersion( APP_VERSION );
++    QTimer::singleShot(5000, [&json_array] {
++        init(json_array);
++    });
+     return app.exec();
+ }
+ 
+diff --git a/src/mainwindow.cpp b/src/mainwindow.cpp
+index 4d1346c..2eb4f68 100644
+--- a/src/mainwindow.cpp
++++ b/src/mainwindow.cpp
+@@ -28,6 +28,9 @@
+ #include "utils.h"
+ #include "simuapi_apppath.h"
+ 
++#include <string>
++#include <iostream>
++using namespace std;
+ 
+ MainWindow* MainWindow::m_pSelf = 0l;
+ 
+@@ -55,6 +58,15 @@ MainWindow::MainWindow()
+ }
+ MainWindow::~MainWindow(){ }
+ 
++void MainWindow::autoStart(string simu, string hex){
++    QString simuqstr = QString::fromStdString(simu);
++    QString hexqstr = QString::fromStdString(hex);
++    m_circuit->loadCirc(simuqstr);
++    m_editor->loadFile(hexqstr);
++    m_circuit->powerCircOn();
++    m_editor->upload();
++}
++
+ void MainWindow::closeEvent( QCloseEvent *event )
+ {
+     if( !m_editor->close() )      { event->ignore(); return; }
+diff --git a/src/mainwindow.h b/src/mainwindow.h
+index 7801481..e2507ce 100644
+--- a/src/mainwindow.h
++++ b/src/mainwindow.h
+@@ -21,6 +21,9 @@
+ #define MAINWINDOW_H
+ 
+ #include <QtWidgets>
++#include <string>
++#include <iostream>
++using namespace std;
+ 
+ class PropertiesWidget;
+ class ComponentSelector;
+@@ -39,7 +42,7 @@ class MAINMODULE_EXPORT MainWindow : public QMainWindow
+  static MainWindow* self() { return m_pSelf; }
+ 
+         QSettings* settings();
+-
++        void autoStart(string simu, string hex);
+         void loadPlugins();
+         void unLoadPugin( QString pluginName );
+         
+diff --git a/src/simulator/elements/processors/avrprocessor.cpp b/src/simulator/elements/processors/avrprocessor.cpp
+index 5daa390..44f2628 100644
+--- a/src/simulator/elements/processors/avrprocessor.cpp
++++ b/src/simulator/elements/processors/avrprocessor.cpp
+@@ -176,9 +176,9 @@ bool AvrProcessor::loadFirmware( QString fileN )
+     /// Done: Modified simavr to not call abort(), instead it returns error code.
+     if( avr_load_firmware( m_avrProcessor, &f ) != 0 )
+     {
+-        QMessageBox::warning(0,tr("Error:"),
+-                               tr("Wrong firmware!!").arg(f.mmcu) );
+-        return false;
++        // QMessageBox::warning(0,tr("Error:"),
++        //                        tr("Wrong firmware!!").arg(f.mmcu) );
++        // return false;
+     }
+     if( f.flashbase ) m_avrProcessor->pc = f.flashbase;
+ 
+diff --git a/src/simulator/simulator.cpp b/src/simulator/simulator.cpp
+index 42f716c..b6125a3 100644
+--- a/src/simulator/simulator.cpp
++++ b/src/simulator/simulator.cpp
+@@ -205,6 +205,10 @@ void Simulator::runContinuous()
+     m_timerId = this->startTimer( m_timerTick );
+ }
+ 
++int Simulator::getTime(){
++    return m_RefTimer.elapsed();
++}
++
+ void Simulator::debug()
+ {
+     startSim();
+diff --git a/src/simulator/simulator.h b/src/simulator/simulator.h
+index 80a0c8e..741ca78 100644
+--- a/src/simulator/simulator.h
++++ b/src/simulator/simulator.h
+@@ -51,6 +51,7 @@ class MAINMODULE_EXPORT Simulator : public QObject
+         void runGraphicStep();
+         void runExtraStep();
+         
++        int getTime();
+         int simuRate() { return m_simuRate; }
+         int simuRateChanged( int rate );
+ 
