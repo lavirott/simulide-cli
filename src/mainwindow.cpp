@@ -28,6 +28,9 @@
 #include "utils.h"
 #include "simuapi_apppath.h"
 
+#include <string>
+#include <iostream>
+using namespace std;
 
 MainWindow* MainWindow::m_pSelf = 0l;
 
@@ -75,6 +78,15 @@ MainWindow::MainWindow()
     }
 }
 MainWindow::~MainWindow(){ }
+
+void MainWindow::autoStart(string simu, string hex){
+    QString simuqstr = QString::fromStdString(simu);
+    QString hexqstr = QString::fromStdString(hex);
+    m_circuit->loadCirc(simuqstr);
+    m_editor->loadFile(hexqstr);
+    m_circuit->powerCircOn();
+    m_editor->upload();
+}
 
 void MainWindow::closeEvent( QCloseEvent *event )
 {

@@ -1,4 +1,21 @@
-# SimulIDE 0.3.10
+# simulide-cli
+
+* To start the simulation:
+
+`./simulide --simu pathToSimu --hex pathToHex` with the option `--platform offscreen` to start without display.
+
+The simulation logs are automatically saved in a Json file when the program is closed with `CTRL+C`.
+
+* To compare the logs of two executions:
+
+```./simulide --logs pathToLogs1 pathToLogs2 margin --platform offscreen```
+
+* To replay a previous simulation, based on its logs: 
+
+```./simulide --simu pathToSimu --play pathToLogs```
+
+
+# SimulIDE 0.3.12-SR8
 
 Electronic Circuit Simulator
 

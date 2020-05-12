@@ -50,7 +50,9 @@ class MAINMODULE_EXPORT Simulator : public QObject
         void runCircuitStep();
         void runGraphicStep();
         void runExtraStep();
-        
+
+        int getTime();
+
         int circuitRate() { return m_circuitRate; }
         int simuRate() { return m_simuRate; }
         int simuRateChanged( int rate );

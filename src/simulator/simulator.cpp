@@ -215,6 +215,10 @@ void Simulator::runContinuous()
     m_timerId = this->startTimer( m_timerTick );
 }
 
+int Simulator::getTime(){
+    return m_RefTimer.elapsed();
+}
+
 void Simulator::debug()
 {
     startSim();

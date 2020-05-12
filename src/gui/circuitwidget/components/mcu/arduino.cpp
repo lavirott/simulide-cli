@@ -82,7 +82,7 @@ Arduino::Arduino( QObject* parent, QString type, QString id )
 Arduino::~Arduino() 
 {
 }
-
+QList<AVRComponentPin*> Arduino::myPinLIst;
 void Arduino::remove()
 {
     m_pb5Pin->setEnode( 0l );
@@ -225,7 +225,7 @@ void Arduino::addPin( QString id, QString type, QString label, int pos, int xpos
     //qDebug()<<pos<<id<<label;
     AVRComponentPin*  newPin = new AVRComponentPin( this, id, type, label, pos, xpos, ypos, angle );
     m_pinList.append( newPin );
-    
+    Arduino::myPinLIst.append(newPin);
     if( type.startsWith("adc") )m_ADCpinList[type.right(1).toInt()] = newPin;
 }
 

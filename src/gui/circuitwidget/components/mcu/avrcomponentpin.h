@@ -52,6 +52,8 @@ class AVRComponentPin : public McuComponentPin
         
         void adcread();
         
+        QString getId();
+        
         virtual void resetState();
 
         static void port_hook( struct avr_irq_t* irq, uint32_t value, void* param )
@@ -80,6 +82,8 @@ class AVRComponentPin : public McuComponentPin
 
             ptrAVRComponentPin->set_pinImpedance(value);
         }
+
+        static QJsonArray tempList;
 
     protected:
         void setPullup( uint32_t value );
