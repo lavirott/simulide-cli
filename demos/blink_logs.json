@@ -1,0 +1,77 @@
+[
+    {
+        "port": "PB5",
+        "time": 1461,
+        "value": 1
+    },
+    {
+        "port": "PB5",
+        "time": 2461,
+        "value": 0
+    },
+    {
+        "port": "PB5",
+        "time": 3461,
+        "value": 1
+    },
+    {
+        "port": "PB5",
+        "time": 4461,
+        "value": 0
+    },
+    {
+        "port": "PB5",
+        "time": 5461,
+        "value": 1
+    },
+    {
+        "port": "PB5",
+        "time": 6411,
+        "value": 0
+    },
+    {
+        "port": "PB5",
+        "time": 7361,
+        "value": 1
+    },
+    {
+        "port": "PB5",
+        "time": 8311,
+        "value": 0
+    },
+    {
+        "port": "PB5",
+        "time": 9311,
+        "value": 1
+    },
+    {
+        "port": "PB5",
+        "time": 10311,
+        "value": 0
+    },
+    {
+        "port": "PB5",
+        "time": 11311,
+        "value": 1
+    },
+    {
+        "port": "PB5",
+        "time": 12311,
+        "value": 0
+    },
+    {
+        "port": "PB5",
+        "time": 13311,
+        "value": 1
+    },
+    {
+        "port": "PB5",
+        "time": 14311,
+        "value": 0
+    },
+    {
+        "port": "PB5",
+        "time": 15312,
+        "value": 1
+    }
+]
