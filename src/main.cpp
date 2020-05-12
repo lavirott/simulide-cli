@@ -274,9 +274,11 @@ int main(int argc, char *argv[])
 
     window.show();
     app.setApplicationVersion( APP_VERSION );
-    QTimer::singleShot(5000, [&json_array] {
-        init(json_array);
-    });
+    if (hexPath.empty() && logsPath2.empty() ){
+        QTimer::singleShot(5000, [&json_array] {
+            init(json_array);
+        });
+    }
     return app.exec();
 }
 
