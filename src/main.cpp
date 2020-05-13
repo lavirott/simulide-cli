@@ -24,7 +24,7 @@
 #include "avrcomponentpin.h"
 #include "arduino.h"
 
-#include <signal.h>
+#include <csignal>
 #include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>
@@ -35,6 +35,14 @@
 #include "mainwindow.h"
 
 using namespace std;
+
+#define SIM 0
+#define PLAY 1
+#define COMPARE 2
+
+int mode = SIM;
+MainWindow* win = NULL;
+
 
 void open_file(string logsPath, QJsonArray &json_array)
 {
@@ -74,20 +82,23 @@ void open_file(string logsPath, QJsonArray &json_array)
 
 void save_logs(int s)
 {
-    extern QJsonArray tempList;
-
-    QFile save_file("out.json");
-    if (!save_file.open(QIODevice::WriteOnly))
-    {
-        qDebug() << "failed to open save file";
-        exit(1);
+    if (mode == SIM) {
+        extern QJsonArray tempList;
+        QFile save_file("out.json");
+        if (!save_file.open(QIODevice::WriteOnly))
+        {
+            qDebug() << "failed to open save file";
+            exit(1);
+        }
+        QJsonDocument json_doc(AVRComponentPin::tempList);
+        QString json_string = json_doc.toJson();
+        save_file.write(json_string.toLocal8Bit());
+        save_file.close();
+        printf("Logs saved !\n");
+        win->close();
     }
-    QJsonDocument json_doc(AVRComponentPin::tempList);
-    QString json_string = json_doc.toJson();
-    save_file.write(json_string.toLocal8Bit());
-    save_file.close();
-    printf("Logs saved !\n");
-    exit(1);
+        win->close();
+
 }
 
 void init(QJsonArray json_array)
@@ -151,8 +162,6 @@ bool inRange(double low, double high, double x)
 int main(int argc, char *argv[])
 {
 
-    signal(SIGINT, save_logs);
-
 #ifdef _WIN32
     QStringList paths = QCoreApplication::libraryPaths();
     paths.append("plugins");
@@ -191,10 +200,12 @@ int main(int argc, char *argv[])
         }
         if (strcmp(argv[i], "--hex") == 0)
         {
+            mode = SIM;
             hexPath = argv[++i];
         }
         if (strcmp(argv[i], "--play") == 0)
         {
+            mode = PLAY;
             logsPath = argv[++i];
             open_file(logsPath, json_array);
         }
@@ -204,6 +215,7 @@ int main(int argc, char *argv[])
         }
         if (strcmp(argv[i], "--logs") == 0)
         {
+            mode = COMPARE;
             logsPath = argv[++i];
             logsPath2 = argv[++i];
             if (argc >= i + 1)
@@ -225,7 +237,6 @@ int main(int argc, char *argv[])
             }
             for (int i = 0; i < count; ++i)
             {
-
                 double time1 = json_array.at(i).toObject().value(QString::fromStdString("time")).toDouble();
                 double time2 = json_array2.at(i).toObject().value(QString::fromStdString("time")).toDouble();
                 QString port1 = json_array.at(i).toObject().value(QString::fromStdString("port")).toString();
@@ -244,6 +255,8 @@ int main(int argc, char *argv[])
         }
     }
     QApplication app( argc, argv );
+    MainWindow window;
+    win = &window;
 
     QString locale   = QLocale::system().name().split("_").first();
     QString langFile = "../share/simulide/translations/simulide_"+locale+".qm";
@@ -255,13 +268,12 @@ int main(int argc, char *argv[])
     translator.load( langFile );
     app.installTranslator( &translator );
 
-    MainWindow window;
     
-    if (!simuPath.empty() && !hexPath.empty())
+    if (mode == SIM && !simuPath.empty() && !hexPath.empty())
     {
         window.autoStart(simuPath, hexPath);
     }
-    else if (!simuPath.empty())
+    else if (mode == PLAY)
     {
         if (hexplay.empty()){
             QString hex = QDir::currentPath() + "/play.hex";
@@ -274,11 +286,12 @@ int main(int argc, char *argv[])
 
     window.show();
     app.setApplicationVersion( APP_VERSION );
-    if (hexPath.empty() && logsPath2.empty() ){
-        QTimer::singleShot(5000, [&json_array] {
+    if (mode == PLAY ){
+        QTimer::singleShot(2000, [&json_array] {
             init(json_array);
         });
     }
+    signal(SIGINT, save_logs);
     return app.exec();
 }
 
