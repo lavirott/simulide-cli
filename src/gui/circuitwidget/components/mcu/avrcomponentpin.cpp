@@ -29,7 +29,9 @@ AVRComponentPin::AVRComponentPin( McuComponent* mcu, QString id, QString type, Q
 }
 AVRComponentPin::~AVRComponentPin(){}
 
-QJsonArray AVRComponentPin::tempList;
+QJsonArray AVRComponentPin::outputLogs;
+QJsonArray AVRComponentPin::inputLogs;
+
 
 QString AVRComponentPin::getId( ){
     return m_id;
@@ -196,13 +198,24 @@ void AVRComponentPin::setPullup( uint32_t value )
     }
 }
 
-// QJsonArray AVRComponentPin::getLogs(){
-//     return tempList;
-// }
-
 void AVRComponentPin::set_pinVoltage( uint32_t value )
 {
-    if( m_isInput ) return;
+if (m_isInput)
+    {
+        if (Simulator::self()->getTime() >= 90)
+        {
+            // qDebug() << Simulator::self()->getTime() << "Input :"
+            //          << "Port" << m_port << m_id << "   value : " << value;
+ 
+            QJsonObject tempObject{
+                {"type", "input"},
+                {"time", (int)Simulator::self()->getTime()},
+                {"port", m_id},
+                {"value", (int)value}};
+            AVRComponentPin::inputLogs.append(tempObject);
+        }
+        return;
+    }
     
     qDebug() <<  Simulator::self()->getTime() << "Port" << m_port << m_id << "   value : " << value;
 // ==============================================================================================================
@@ -212,7 +225,7 @@ void AVRComponentPin::set_pinVoltage( uint32_t value )
     {"port", m_id},
     {"value", (int) value}
 }; 
-    AVRComponentPin::tempList.append(tempObject);
+    AVRComponentPin::outputLogs.append(tempObject);
 // ==============================================================================================================
 
     //if( m_isInput ) setPullup( value>0 ); // Activate pullup when port is written while input

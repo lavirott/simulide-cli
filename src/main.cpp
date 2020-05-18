@@ -83,17 +83,29 @@ void open_file(string logsPath, QJsonArray &json_array)
 void save_logs(int s)
 {
     if (mode == SIM) {
-        extern QJsonArray tempList;
-        QFile save_file("out.json");
+        extern QJsonArray outputLogs;
+        QFile save_file("output.json");
         if (!save_file.open(QIODevice::WriteOnly))
         {
             qDebug() << "failed to open save file";
             exit(1);
         }
-        QJsonDocument json_doc(AVRComponentPin::tempList);
+        QJsonDocument json_doc(AVRComponentPin::outputLogs);
         QString json_string = json_doc.toJson();
         save_file.write(json_string.toLocal8Bit());
         save_file.close();
+
+        extern QJsonArray inputLogs;
+        QFile save_file2("input.json");
+        if (!save_file2.open(QIODevice::WriteOnly))
+        {
+            qDebug() << "failed to open save file";
+            exit(1);
+        }
+        QJsonDocument json_doc2(AVRComponentPin::inputLogs);
+        QString json_string2 = json_doc2.toJson();
+        save_file2.write(json_string2.toLocal8Bit());
+        save_file2.close();
         printf("Logs saved !\n");
         win->close();
     }
